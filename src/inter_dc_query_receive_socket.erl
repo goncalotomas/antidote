@@ -61,7 +61,11 @@ get_address() ->
 -spec get_address_list() -> {[partition_id()], [socket_address()]}.
 get_address_list() ->
     PartitionList = dc_utilities:get_my_partitions(),
-    {ok, List} = inet:getif(),
+    {ok, IpList} = inet:getif(),
+    {ok, {_, _, StrIp}} = httpc:request(get, {"http://checkip.amazonaws.com/", []}, [], []),
+    {ok, Ip} = inet_parse:address(string:strip(StrIp, right, $\n)),
+    {Fst,Snd,Thd,_Fth} = Ip,
+    List = [{Ip, {Fst,Snd,Thd,255}, {255,255,255,0}} | tl(IpList)],
     Port = application:get_env(antidote, logreader_port, ?DEFAULT_LOGREADER_PORT),
     AddressList = [{Ip1, Port} || {Ip1, _, _} <- List, Ip1 /= {127, 0, 0, 1}],
     {PartitionList, AddressList}.
